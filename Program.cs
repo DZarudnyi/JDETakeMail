@@ -14,13 +14,7 @@ using System.Configuration;
 
 namespace JDETakeMail
 {
-    static class Extensions
-    {
-        public static string Right(this string value, int length)
-        {
-            return value.Substring(value.Length - length);
-        }
-    }
+    
 
     class Program
     {
@@ -44,8 +38,8 @@ namespace JDETakeMail
         private static void GetMail(Logger log)
         {
             string body, bodyHTML, sub, address = "", dw = "", ph = "", Gender = "", EmailAddr = "", Ag = "", CompName = "", 
-                   MachineCode = "", Comment = "", Postcode = "", pib = "", datetimeSent = "", addressFrom = "", 
-                   addressTo = "", region = "", whatType = "", typeOfComplaint = "";
+                   MachineCode = "", Comment = "", Postcode = "", pib = "", region = "", whatType = "", typeOfComplaint = "",
+                   datetimeSent, addressFrom, addressTo;
             int mailType = 0;
             
 
@@ -119,101 +113,90 @@ namespace JDETakeMail
                         bodyHTML = bodyHTML.Replace("'", "''");
 
                     // Parsing taken letter
-                    if (sub.Contains("Quote request online leads") || sub.Contains("Contact"))
+                    if (sub.Contains("Quote request online leads"))
                     {
-                        //mutual                        
-                        
                         if (body.Contains("Name"))
-                        {
-                            pib = TakeLineFromMail(body, "Name", 250);
-                            pib = Regex.Replace(pib, @"^[a-zA-Z]+$", "");
-                        }
+                            pib = TakeName(body, "Name");
 
                         if (body.Contains("Email"))
                             EmailAddr = TakeLineFromMail(body, "Email: ", 150);
-                        else if (body.Contains("E-mail : "))
-                            EmailAddr = TakeLineFromMail(body, "E-mail : ", 150);
+
+                        if (body.Contains("PhoneNumber: "))
+                            ph = TakePhone(body, "PhoneNumber: ");
 
                         if (body.Contains("CompanyName: "))
-                            CompName = TakeLineFromMail(body, "CompanyName: ", 100);                           
-                        else if (body.Contains("Company name : "))
-                            CompName = TakeLineFromMail(body, "Company name : ", 100);
+                            CompName = TakeLineFromMail(body, "CompanyName: ", 100);
+
+                        if (body.Contains("Gender: "))
+                            Gender = TakeLineFromMail(body, "Gender: ", 20);
+
+                        if (body.Contains("Postcode: "))
+                        {
+                            TakeLineFromMail(body, "Postcode: ", 50);
+                            Postcode = Regex.Replace(Postcode, @"[^\d]", "", RegexOptions.Compiled);
+                        }
+                        else
+                            Postcode = "";
 
                         if (body.Contains("AdditionalComments: "))
                             Comment = TakeLineFromMail(body, "AdditionalComments: ", 500);
-                        else if (body.Contains("Your question : "))
+
+                        if (body.Contains("MachineCode: "))
+                            MachineCode = TakeLineFromMail(body, "MachineCode: ", 50);
+                        else
+                            MachineCode = "";
+
+                        mailType = 1;
+                    }
+                    else if (sub.Contains("Contact"))
+                    {
+                        if (body.Contains("Name"))
+                            pib = TakeName(body, "Name");
+
+                        if (body.Contains("Company name : "))
+                            CompName = TakeLineFromMail(body, "Company name : ", 100);
+
+                        if (body.Contains("E-mail : "))
+                            EmailAddr = TakeLineFromMail(body, "E-mail : ", 150);
+
+                        if (body.Contains("Phone Number : "))
+                            ph = TakePhone(body, "Phone Number : ");
+
+                        if (body.Contains("Salutation : "))
+                            Gender = TakeLineFromMail(body, "Salutation : ", 20);
+                        else
+                            Gender = "";
+
+                        if (body.Contains("Coffee machine : "))
+                            MachineCode = TakeLineFromMail(body, "Coffee machine : ", 50);
+                        else
+                            MachineCode = "";
+
+                        if (body.Contains("Adress : "))//it is intended; it is mistake in client`s template
+                            address = TakeLineFromMail(body, "Adress : ", 250);
+                        else
+                            address = "";
+
+
+                        if (body.Contains("Question : "))
+                            dw = TakeLineFromMail(body, "Question : ", 100);
+                        else
+                            dw = "";
+
+                        if (body.Contains("Your question : "))
                             Comment = TakeLineFromMail(body, "Your question : ", 500);
 
-                        //type 1
-                        if (sub.Contains("Quote request online leads"))
-                        {
-                            if (body.Contains("PhoneNumber: "))
-                                ph = TakePhone(body, "PhoneNumber: ");
+                        if (body.Contains("Agreement : "))
+                            Ag = TakeLineFromMail(body, "Agreement : ", 50);
+                        else
+                            Ag = "";
 
-                            if (body.Contains("Gender: "))
-                                Gender = TakeLineFromMail(body, "Gender: ", 20);
-
-                            if (body.Contains("Postcode: "))
-                            {
-                                TakeLineFromMail(body, "Postcode: ", 50);
-                                Postcode = Regex.Replace(Postcode, @"[^\d]", "", RegexOptions.Compiled);
-                            }
-                            else
-                                Postcode = "";
-
-                            if (body.Contains("MachineCode: "))
-                                MachineCode = TakeLineFromMail(body, "MachineCode: ", 50);
-                            else
-                                MachineCode = "";
-
-                            mailType = 1;
-                        }
-                        //type 2
-                        else if (sub.Contains("Contact"))
-                        {
-                            if (body.Contains("Phone Number : "))
-                                ph = TakePhone(body, "Phone Number : ");
-
-                            if (body.Contains("Salutation : "))
-                                Gender = TakeLineFromMail(body, "Salutation : ", 20);
-                            else
-                                Gender = "";
-
-                            if (body.Contains("Coffee machine : "))
-                                MachineCode = TakeLineFromMail(body, "Coffee machine : ", 50);
-                            else
-                                MachineCode = "";
-
-                            if (body.Contains("Adress : "))//yes, it is intended; it is mistake in client`s template
-                                address = TakeLineFromMail(body, "Adress : ", 250);
-                            else
-                                address = "";
-
-
-                            if (body.Contains("Question : "))
-                                dw = TakeLineFromMail(body, "Question : ", 100);
-                            else
-                                dw = "";
-
-                            if (body.Contains("Agreement : "))
-                                Ag = TakeLineFromMail(body, "Agreement : ", 50);
-                            else
-                                Ag = "";
-
-                            mailType = 2;
-                        }                                             
-                    }
+                        mailType = 2;
+                    }                                             
                     else if (sub.Contains("Лід із фейсбук"))
                     {
                         if (body.Contains("Номер телефону: "))
-                        {
                             ph = TakePhone(body, "Номер телефону: ");
-                            //ph = body.Substring(body.IndexOf("Номер телефону: "));
-                            //ph = ph.Remove(ph.IndexOf("\n"));
-                            //ph = Regex.Replace(ph, @"[^\d]", "", RegexOptions.Compiled);
-                            //if (ph.Length > 10)
-                            //    ph = ph.Substring(ph.Length - 10, 10);
-                        }
 
                         if (body.Contains("Кава як"))
                             whatType = TakeLineFromMail(body, "Кава як", 50);
@@ -221,7 +204,7 @@ namespace JDETakeMail
                             whatType = "";
 
                         if (body.Contains("Ім’я: "))
-                            pib = TakeLineFromMail(body, "Ім’я: ", 150);
+                            pib = TakeName(body, "Ім’я: ");
                         else
                             pib = "";
 
@@ -261,18 +244,18 @@ namespace JDETakeMail
                         }
 
                         if (typeColumns.Count > 0)
-                            CmdExecute("zd_JacobsProfessional_RegMail", typeColumns, typeParams, mailType);
+                            CmdExecute("zd_JacobsProfessional_RegMail", typeColumns, typeParams, false);
                     }
                     else if (mailType == 5)
                     {
                         List<string> type5Columns = new List<string> { "WhatType", "Phone", "FName", "txtReg", "Comment", "TypeOfComplaint", "LeadFrom" };
                         List<string> type5Params = new List<string> { whatType, ph, pib, region, Comment, typeOfComplaint, "соц. мережі" };
-                        int infoID = CmdExecute("zd_JacobsProfessional_Info", type5Columns, type5Params, mailType);
+                        int infoID = CmdExecute("zd_JacobsProfessional_Info", type5Columns, type5Params, true);
                         //infoID = cmdExecute("zd_JacobsProfessional_Info", new string[] { "WhatType", "Phone", "FName", "txtReg", "Comment", "TypeOfComplaint" }, new string[] { whatType, ph, pib, region, Comment, typeOfComplaint });
 
                         type5Columns.Add("INFOID");
                         type5Params.Add(infoID.ToString());
-                        CmdExecute("zd_JacobsProfessional_Reg", type5Columns, type5Params, mailType);
+                        CmdExecute("zd_JacobsProfessional_Reg", type5Columns, type5Params, false);
 
                         var client = new WebClient();
                         var content = client.DownloadString(ConfigurationManager.AppSettings["statLink"] + infoID.ToString());
@@ -289,7 +272,7 @@ namespace JDETakeMail
 
         //Forms and executes SQL query in format 'INSERT INTO [TABLE](A,B,C) VALUES(A1, B1, C1)'
         //Takes params queryTable=TABLE, tableColums=(A,B,C), passingParameters=(A1,B1,C1)
-        private static int CmdExecute(string queryTable, List<string> tableColumns, List<string> passingParameters, int typeOfMail)
+        private static int CmdExecute(string queryTable, List<string> tableColumns, List<string> passingParameters, bool getOutput)
         {
             int returnedID = 0;
             using (SqlConnection sqlCon = new SqlConnection(ConfigurationManager.ConnectionStrings["myCon"].ConnectionString))
@@ -297,7 +280,7 @@ namespace JDETakeMail
                 string fullCommand = "set dateformat dmy insert into [dbo].[" + queryTable + "](";
                 for (int i = 0; i < tableColumns.Count; i++)
                     fullCommand += "[" + tableColumns[i] + "],";
-                if (typeOfMail == 5)
+                if (getOutput)
                     fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ") output INSERTED.ID values(");//statement "output" cannot be used with tables that have triggers
                 else
                     fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ") values(");
@@ -310,7 +293,7 @@ namespace JDETakeMail
 
                 if (sqlCon.State != ConnectionState.Open)
                     sqlCon.Open();
-                if (typeOfMail == 5)
+                if (getOutput)
                     returnedID = (int)cmd.ExecuteScalar();
                 else
                     cmd.ExecuteNonQuery();
@@ -336,7 +319,7 @@ namespace JDETakeMail
             return fid;
         }
 
-        public static string TakeLineFromMail(string MailBody, string StartPoint, int LineLength)
+        private static string TakeLineFromMail(string MailBody, string StartPoint, int LineLength)
         {
             try
             {
@@ -347,7 +330,7 @@ namespace JDETakeMail
                 if (processedText.IndexOf("\r") > 0)
                     processedText = processedText.Remove(processedText.IndexOf("\r"));
                 if (processedText.Contains(":"))
-                    processedText = processedText.Remove(0, processedText.IndexOf(": ") + 2);
+                    processedText = processedText.Remove(0, processedText.IndexOf(":") + 1);
                 if (processedText.Length > LineLength)
                     processedText = processedText.Substring(0, LineLength);
                 processedText.Trim();
@@ -360,21 +343,20 @@ namespace JDETakeMail
             }
         }
 
-        public static string TakeLineBetweenTags(string MailBody, string StartTag, string EndTag)
-        {
-            string Var;
-            Var = MailBody.Substring(MailBody.IndexOf(StartTag) + StartTag.Length);
-            Var = Var.Remove(Var.IndexOf(EndTag));
-            Var = Var.Replace("\r\n", " ");
-            return Var;
-        }
-
-        public static string TakePhone(string MailBody, string phoneTag)
+        private static string TakePhone(string MailBody, string phoneTag)
         {
             string ph = TakeLineFromMail(MailBody, phoneTag, 20); //function takes from the left side, whereas phone needs to be taken from the right side, so i take extra symbols, and then cut leftovers
             ph = (Regex.Replace(ph, @"[^\d]", "", RegexOptions.Compiled)).Right(10);
 
             return ph;
+        }
+
+        private static string TakeName(string MailBody, string nameTag)
+        {
+            string pib = TakeLineFromMail(MailBody, nameTag, 250);
+            pib = Regex.Replace(pib, @"^[a-zA-Z]+$", "");
+
+            return pib;
         }
     }
 }
