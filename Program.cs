@@ -93,131 +93,47 @@ namespace JDETakeMail
                     EmailMessage messageHTML = EmailMessage.Bind(service, item.Id, psPropsetHTML);
                     bodyHTML = messageHTML.Body.Text;
 
-                    if (addressTo == null)
-                        addressTo = "";
-                    else
-                        addressTo = addressTo.Replace("'", "''");
-                    if (sub == null)
-                        sub = "";
-                    else
-                        sub = sub.Replace("'", "''");
-
-                    if (body == null)
-                        body = "";
-                    else
-                        body = body.Replace("'", "''");
-
-                    if (bodyHTML == null)
-                        bodyHTML = "";
-                    else
-                        bodyHTML = bodyHTML.Replace("'", "''");
+                    ReplaceQuotes(ref addressTo);
+                    ReplaceQuotes(ref sub);
+                    ReplaceQuotes(ref body);
+                    ReplaceQuotes(ref bodyHTML);
 
                     // Parsing taken letter
                     if (sub.Contains("Quote request online leads"))
                     {
-                        if (body.Contains("Name"))
-                            pib = TakeName(body, "Name");
-
-                        if (body.Contains("Email"))
-                            EmailAddr = TakeLineFromMail(body, "Email: ", 150);
-
-                        if (body.Contains("PhoneNumber: "))
-                            ph = TakePhone(body, "PhoneNumber: ");
-
-                        if (body.Contains("CompanyName: "))
-                            CompName = TakeLineFromMail(body, "CompanyName: ", 100);
-
-                        if (body.Contains("Gender: "))
-                            Gender = TakeLineFromMail(body, "Gender: ", 20);
-
-                        if (body.Contains("Postcode: "))
-                        {
-                            TakeLineFromMail(body, "Postcode: ", 50);
-                            Postcode = Regex.Replace(Postcode, @"[^\d]", "", RegexOptions.Compiled);
-                        }
-                        else
-                            Postcode = "";
-
-                        if (body.Contains("AdditionalComments: "))
-                            Comment = TakeLineFromMail(body, "AdditionalComments: ", 500);
-
-                        if (body.Contains("MachineCode: "))
-                            MachineCode = TakeLineFromMail(body, "MachineCode: ", 50);
-                        else
-                            MachineCode = "";
+                        pib = TakeName(body, "Name");
+                        EmailAddr = TakeLineFromMail(body, "Email", 150);
+                        ph = TakePhone(body, "PhoneNumber");
+                        CompName = TakeLineFromMail(body, "CompanyName", 100);
+                        Gender = TakeLineFromMail(body, "Gender", 20);
+                        Postcode = Regex.Replace(TakeLineFromMail(body, "Postcode", 50), @"[^\d]", "", RegexOptions.Compiled);
+                        Comment = TakeLineFromMail(body, "AdditionalComments", 500);
+                        MachineCode = TakeLineFromMail(body, "MachineCode", 50);
 
                         mailType = 1;
                     }
                     else if (sub.Contains("Contact"))
                     {
-                        if (body.Contains("Name"))
-                            pib = TakeName(body, "Name");
-
-                        if (body.Contains("Company name : "))
-                            CompName = TakeLineFromMail(body, "Company name : ", 100);
-
-                        if (body.Contains("E-mail : "))
-                            EmailAddr = TakeLineFromMail(body, "E-mail : ", 150);
-
-                        if (body.Contains("Phone Number : "))
-                            ph = TakePhone(body, "Phone Number : ");
-
-                        if (body.Contains("Salutation : "))
-                            Gender = TakeLineFromMail(body, "Salutation : ", 20);
-                        else
-                            Gender = "";
-
-                        if (body.Contains("Coffee machine : "))
-                            MachineCode = TakeLineFromMail(body, "Coffee machine : ", 50);
-                        else
-                            MachineCode = "";
-
-                        if (body.Contains("Adress : "))//it is intended; it is mistake in client`s template
-                            address = TakeLineFromMail(body, "Adress : ", 250);
-                        else
-                            address = "";
-
-
-                        if (body.Contains("Question : "))
-                            dw = TakeLineFromMail(body, "Question : ", 100);
-                        else
-                            dw = "";
-
-                        if (body.Contains("Your question : "))
-                            Comment = TakeLineFromMail(body, "Your question : ", 500);
-
-                        if (body.Contains("Agreement : "))
-                            Ag = TakeLineFromMail(body, "Agreement : ", 50);
-                        else
-                            Ag = "";
+                        pib = TakeName(body, "Name");
+                        CompName = TakeLineFromMail(body, "Company name", 100);
+                        EmailAddr = TakeLineFromMail(body, "E-mail", 150);
+                        ph = TakePhone(body, "Phone Number");
+                        Gender = TakeLineFromMail(body, "Salutation", 20);
+                        MachineCode = TakeLineFromMail(body, "Coffee machine", 50);
+                        address = TakeLineFromMail(body, "Adress", 250);//it is intended; it is mistake in client`s template
+                        dw = TakeLineFromMail(body, "Question", 100);
+                        Comment = TakeLineFromMail(body, "Your question", 500);
+                        Ag = TakeLineFromMail(body, "Agreement", 50);
 
                         mailType = 2;
                     }                                             
                     else if (sub.Contains("Лід із фейсбук"))
                     {
-                        if (body.Contains("Номер телефону: "))
-                            ph = TakePhone(body, "Номер телефону: ");
-
-                        if (body.Contains("Кава як"))
-                            whatType = TakeLineFromMail(body, "Кава як", 50);
-                        else
-                            whatType = "";
-
-                        if (body.Contains("Ім’я: "))
-                            pib = TakeName(body, "Ім’я: ");
-                        else
-                            pib = "";
-
-                        if (body.Contains("Область: "))
-                            region = TakeLineFromMail(body, "Область: ", 250);
-                        else
-                            region = "";
-
-                        if (body.Contains("Суть звернення: "))
-                            Comment = TakeLineFromMail(body, "Суть звернення: ", 500);
-                        else
-                            Comment = "";
-
+                        ph = TakePhone(body, "Номер телефону");
+                        whatType = TakeLineFromMail(body, "Кава як", 50);
+                        pib = TakeName(body, "Ім’я");
+                        region = TakeLineFromMail(body, "Область", 250);
+                        Comment = TakeLineFromMail(body, "Суть звернення", 500);
                         typeOfComplaint = "Надання комерційної пропозиції";
 
                         mailType = 5;
@@ -319,28 +235,41 @@ namespace JDETakeMail
             return fid;
         }
 
-        private static string TakeLineFromMail(string MailBody, string StartPoint, int LineLength)
+        private static string ReplaceQuotes(ref string text)
         {
-            try
-            {
-                string processedText;
-                processedText = MailBody.Substring(MailBody.IndexOf(StartPoint));
-                if (processedText.IndexOf("\n") > 0)
-                    processedText = processedText.Remove(processedText.IndexOf("\n"));
-                if (processedText.IndexOf("\r") > 0)
-                    processedText = processedText.Remove(processedText.IndexOf("\r"));
-                if (processedText.Contains(":"))
-                    processedText = processedText.Remove(0, processedText.IndexOf(":") + 1);
-                if (processedText.Length > LineLength)
-                    processedText = processedText.Substring(0, LineLength);
-                processedText.Trim();
-
-                return processedText;
-            }
-            catch
-            {
+            if (text == null)
                 return "";
+            else
+                return text.Replace("'", "''");
+        }
+
+        private static string TakeLineFromMail(string mailBody, string key, int lineLength)
+        {
+            if (mailBody.Contains(key))
+            {
+                try
+                {
+                    string processedText;
+                    processedText = mailBody.Substring(mailBody.IndexOf(key) + 1);
+                    if (processedText.IndexOf("\n") > 0)
+                        processedText = processedText.Remove(processedText.IndexOf("\n"));
+                    if (processedText.IndexOf("\r") > 0)
+                        processedText = processedText.Remove(processedText.IndexOf("\r"));
+                    if (processedText.Contains(":"))
+                        processedText = processedText.Remove(0, processedText.IndexOf(":") + 1);
+                    if (processedText.Length > lineLength)
+                        processedText = processedText.Substring(0, lineLength);
+                    processedText.Trim();
+
+                    return processedText;
+                }
+                catch
+                {
+                    return "";
+                }
             }
+            else
+                return "";
         }
 
         private static string TakePhone(string MailBody, string phoneTag)
