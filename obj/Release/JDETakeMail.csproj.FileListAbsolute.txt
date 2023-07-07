@@ -17,7 +17,6 @@ E:\C#\!ZD\JDE\JDETakeMail\obj\Release\JDETakeMail.csproj.CopyComplete
 E:\C#\!ZD\JDE\JDETakeMail\obj\Release\JDETakeMail.exe
 E:\C#\!ZD\JDE\JDETakeMail\obj\Release\JDETakeMail.pdb
 D:\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.csproj.CoreCompileInputs.cache
-D:\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.csprojAssemblyReference.cache
 D:\d_D\C#\JDE\JDETakeMail\bin\Release\JDETakeMail.exe.config
 D:\d_D\C#\JDE\JDETakeMail\bin\Release\JDETakeMail.exe
 D:\d_D\C#\JDE\JDETakeMail\bin\Release\JDETakeMail.pdb
@@ -28,3 +27,6 @@ D:\d_D\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.csproj.CoreCompileInputs.cache
 D:\d_D\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.csproj.CopyComplete
 D:\d_D\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.exe
 D:\d_D\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.pdb
+D:\C#\JDE\JDETakeMail\bin\Release\conString.config
+D:\C#\JDE\JDETakeMail\bin\Release\loginCreds.config
+D:\C#\JDE\JDETakeMail\obj\Release\JDETakeMail.csproj.AssemblyReference.cache

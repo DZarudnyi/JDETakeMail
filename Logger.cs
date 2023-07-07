@@ -54,7 +54,7 @@ namespace JDETakeMail
 
 
         public Logger(string logFileName = "", string logPath = "")
-        {            
+        {
             Path = logPath;
             FileName = logFileName;
         }

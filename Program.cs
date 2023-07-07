@@ -1,26 +1,20 @@
 ﻿using System;
 using System.Data;
-using System.Data.OleDb;
 using System.Data.SqlClient;
 using System.Globalization;
-using System.IO;
 using Microsoft.Exchange.WebServices.Data;
 using System.Text.RegularExpressions;
-using System.Security;
 using System.Net;
-using System.Linq;
 using System.Collections.Generic;
 using System.Configuration;
 
 namespace JDETakeMail
 {
-    
-
     class Program
     {
         static void Main(string[] args)
         {
-            Logger log = new Logger(String.Format("JDETakeMail_log_{0}", DateTime.Now.ToString("yyyy-dd-M--HH-mm-ss")), @"D:\logs\JDETakeMail");
+            Logger log = new Logger(String.Format("JDETakeMail_log_{0}", DateTime.Now.ToString("yyyy-dd-M--HH-mm-ss")), ConfigurationManager.AppSettings["logPath"]);// @"D:\logs\JDETakeMail"
             try
             {
                 log.WriteLine("START!");
@@ -55,7 +49,8 @@ namespace JDETakeMail
             log.WriteLine("Authentication success");
 
             Mailbox mailBox = new Mailbox(ConfigurationManager.AppSettings["mail"]);
-            FolderId folderProcessedId = GetExchangeFolderIdByName("Processed", service, mailBox);
+            log.WriteLine("Configured mailbox.");
+            FolderId folderProcessedId = GetExchangeFolderIdByName("Processed", service, mailBox, log);
 
             // Getting all letters from inbox
             FindItemsResults<Item> findResults = service.FindItems(WellKnownFolderName.Inbox, sf, view);
@@ -103,7 +98,14 @@ namespace JDETakeMail
                     {
                         pib = TakeName(body, "Name");
                         EmailAddr = TakeLineFromMail(body, "Email", 150);
+
                         ph = TakePhone(body, "PhoneNumber");
+                        if (!ph.IsNumber())
+                        {
+                            DeleteMessage(message, log);
+                            continue;
+                        }
+
                         CompName = TakeLineFromMail(body, "CompanyName", 100);
                         Gender = TakeLineFromMail(body, "Gender", 20);
                         Postcode = Regex.Replace(TakeLineFromMail(body, "Postcode", 50), @"[^\d]", "", RegexOptions.Compiled);
@@ -117,7 +119,14 @@ namespace JDETakeMail
                         pib = TakeName(body, "Name");
                         CompName = TakeLineFromMail(body, "Company name", 100);
                         EmailAddr = TakeLineFromMail(body, "E-mail", 150);
+
                         ph = TakePhone(body, "Phone Number");
+                        if (!ph.IsNumber())
+                        {
+                            DeleteMessage(message, log);
+                            continue;
+                        }
+
                         Gender = TakeLineFromMail(body, "Salutation", 20);
                         MachineCode = TakeLineFromMail(body, "Coffee machine", 50);
                         address = TakeLineFromMail(body, "Adress", 250);//it is intended; it is mistake in client`s template
@@ -130,6 +139,12 @@ namespace JDETakeMail
                     else if (sub.Contains("Лід із фейсбук"))
                     {
                         ph = TakePhone(body, "Номер телефону");
+                        if (!ph.IsNumber())
+                        {
+                            DeleteMessage(message, log);
+                            continue;
+                        }
+
                         whatType = TakeLineFromMail(body, "Кава як", 50);
                         pib = TakeName(body, "Ім’я");
                         region = TakeLineFromMail(body, "Область", 250);
@@ -139,9 +154,26 @@ namespace JDETakeMail
                         mailType = 5;
                     }
                     else
+                    {
                         mailType = 0;
+                        DeleteMessage(message, log);
+                        continue;
+                    }
+                        
+
+                    if (ph.Substring(0, 3) == "555")
+                    {
+                        DeleteMessage(message, log);
+                        continue;
+                    }
 
                     log.WriteLine("Saving letter info to base.");
+
+                    //meet field limitations before writing to db
+                    if (body.Length > 4000)
+                        body = body.Substring(0, 4000);
+                    if (bodyHTML.Length > 4000)
+                        bodyHTML = bodyHTML.Substring(0, 4000);
 
 
                     if (mailType > 0 && mailType < 5)
@@ -150,14 +182,15 @@ namespace JDETakeMail
                         List<string> typeParams = new List<string> { };
                         if (mailType == 1)
                         {
-                            typeColumns = new List<string> { "Subject", "email", "Body", "Gender", "FullName", "phone", "CompanyName", "PostCode", "Comment", "MachineCode", "TransfPrefixTail", "BodyHTML" };
-                            typeParams = new List<string> { sub, EmailAddr, body, Gender, pib, ph, CompName, Postcode, Comment, MachineCode, "3", bodyHTML };
+                            typeColumns = new List<string> { "Subject", "email", "datetimeSent", "Body", "Gender", "FullName", "phone", "CompanyName", "PostCode", "Comment", "MachineCode", "TransfPrefixTail", "BodyHTML" };
+                            typeParams = new List<string> { sub, EmailAddr, datetimeSent, body, Gender, pib, ph, CompName, Postcode, Comment, MachineCode, "3", bodyHTML };
                         }
                         else if (mailType == 2)
                         {
-                            typeColumns = new List<string> { "Subject", "email", "Body", "Gender", "FullName", "CompanyName", "MachineCode", "phone", "Address", "Question", "Comment", "Agreement", "TransfPrefixTail", "BodyHTML" };
-                            typeParams = new List<string> { sub, EmailAddr, body, Gender, pib, CompName, MachineCode, ph, address, dw, Comment, Ag.ToString(), "3", bodyHTML };
+                            typeColumns = new List<string> { "Subject", "email", "datetimeSent", "Body", "Gender", "FullName", "CompanyName", "MachineCode", "phone", "Address", "Question", "Comment", "Agreement", "TransfPrefixTail", "BodyHTML" };
+                            typeParams = new List<string> { sub, EmailAddr, datetimeSent, body, Gender, pib, CompName, MachineCode, ph, address, dw, Comment, Ag.ToString(), "3", bodyHTML };
                         }
+                        log.WriteLine("Prepared list of values to write into table.");
 
                         if (typeColumns.Count > 0)
                             CmdExecute("zd_JacobsProfessional_RegMail", typeColumns, typeParams, false);
@@ -181,7 +214,7 @@ namespace JDETakeMail
                     message.IsRead = true;
                     message.Update(ConflictResolutionMode.AlwaysOverwrite);
                     message.Move(folderProcessedId);
-                    log.WriteLine("Took a letter!");
+                    log.WriteLine("Message proccessed!");
                 }
             }
         }
@@ -191,34 +224,44 @@ namespace JDETakeMail
         private static int CmdExecute(string queryTable, List<string> tableColumns, List<string> passingParameters, bool getOutput)
         {
             int returnedID = 0;
-            using (SqlConnection sqlCon = new SqlConnection(ConfigurationManager.ConnectionStrings["myCon"].ConnectionString))
+
+            ConnectionStringSettings settings = ConfigurationManager.ConnectionStrings["con"];
+            if (settings != null)
             {
-                string fullCommand = "set dateformat dmy insert into [dbo].[" + queryTable + "](";
-                for (int i = 0; i < tableColumns.Count; i++)
-                    fullCommand += "[" + tableColumns[i] + "],";
-                if (getOutput)
-                    fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ") output INSERTED.ID values(");//statement "output" cannot be used with tables that have triggers
-                else
-                    fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ") values(");
-                for (int i = 0; i < passingParameters.Count; i++)
-                    fullCommand += "'" + passingParameters[i] + "',";
-                fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ")");
+                using (SqlConnection sqlCon = new SqlConnection(settings.ConnectionString))
+                {
+                    string fullCommand = "set dateformat dmy insert into [dbo].[" + queryTable + "](";
+                    for (int i = 0; i < tableColumns.Count; i++)
+                        fullCommand += "[" + tableColumns[i] + "],";
+                    if (getOutput)
+                        fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ") output INSERTED.ID values(");//statement "output" cannot be used with tables that have triggers
+                    else
+                        fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ") values(");
+                    for (int i = 0; i < passingParameters.Count; i++)
+                    {
+                        if (passingParameters[i].Contains("'"))
+                            passingParameters[i] = passingParameters[i].Replace("'", "`");
+                        fullCommand += "'" + passingParameters[i] + "',";
+                    }
+                    fullCommand = fullCommand.Remove(fullCommand.Length - 1, 1).Insert(fullCommand.Length - 1, ")");
 
-                SqlCommand cmd = new SqlCommand();
-                cmd = new SqlCommand(fullCommand, sqlCon);
-
-                if (sqlCon.State != ConnectionState.Open)
-                    sqlCon.Open();
-                if (getOutput)
-                    returnedID = (int)cmd.ExecuteScalar();
-                else
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand(fullCommand, sqlCon))
+                    {
+                        //cmd.Parameters.Add("@1", SqlDbType.NVarChar, length).Value = someValue;
+                        if (sqlCon.State != ConnectionState.Open)
+                            sqlCon.Open();
+                        if (getOutput)
+                            returnedID = (int)cmd.ExecuteScalar();
+                        else
+                            cmd.ExecuteNonQuery();
+                    }
+                }
             }
 
             return returnedID;
         }
 
-        private static FolderId GetExchangeFolderIdByName(string folderName, ExchangeService service, Mailbox mbox)
+        private static FolderId GetExchangeFolderIdByName(string folderName, ExchangeService service, Mailbox mbox, Logger log)
         {
             FolderId fid = new FolderId(WellKnownFolderName.Inbox, mbox);
             FolderView view = new FolderView(100)
@@ -226,11 +269,15 @@ namespace JDETakeMail
                 PropertySet = new PropertySet(BasePropertySet.IdOnly) { FolderSchema.DisplayName },
                 Traversal = FolderTraversal.Deep
             };
+            //server seems to have problem with next line; probably it is because of service object
             FindFoldersResults findFolderResults = service.FindFolders(WellKnownFolderName.Root, view);
             foreach (Folder f in findFolderResults)
             {
                 if (f.DisplayName == folderName)
+                {
                     fid = f.Id;
+                    break;
+                }
             }
             return fid;
         }
@@ -250,7 +297,7 @@ namespace JDETakeMail
                 try
                 {
                     string processedText;
-                    processedText = mailBody.Substring(mailBody.IndexOf(key) + 1);
+                    processedText = mailBody.Substring(mailBody.IndexOf(key));
                     if (processedText.IndexOf("\n") > 0)
                         processedText = processedText.Remove(processedText.IndexOf("\n"));
                     if (processedText.IndexOf("\r") > 0)
@@ -286,6 +333,14 @@ namespace JDETakeMail
             pib = Regex.Replace(pib, @"^[a-zA-Z]+$", "");
 
             return pib;
+        }
+
+        private static void DeleteMessage(EmailMessage message, Logger log)
+        {
+            message.IsRead = true;
+            message.Update(ConflictResolutionMode.AlwaysOverwrite);
+            message.Move(WellKnownFolderName.DeletedItems);
+            log.WriteLine("Found a spam letter. Deleted the letter.");
         }
     }
 }

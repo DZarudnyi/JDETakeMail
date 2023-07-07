@@ -9,13 +9,14 @@ namespace JDETakeMail
     {
         public static ExchangeService Authenticate(string userName, string pass, string domain, string serviceUrl)
         {
-            ExchangeService service = new ExchangeService();
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
-            service.UseDefaultCredentials = false;
-            service.Credentials = new WebCredentials(userName, pass, domain);
-            service.Url = new Uri(serviceUrl);
+            ExchangeService service = new ExchangeService()
+            {
+                UseDefaultCredentials = false,
+                Credentials = new WebCredentials(userName, pass, domain),
+                Url = new Uri(serviceUrl)
+            };
 
             return service;
         }
