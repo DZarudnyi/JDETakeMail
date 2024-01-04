@@ -1,0 +1,1 @@
+This is a project inspired by a product I developed for my employer back in 2020 designed to read, parse and store email messages to MSSQL DB. The initial product was modified throughout the history of its usage to meet new requirements to optimize its performance and improve security.
